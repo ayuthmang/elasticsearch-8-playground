@@ -1202,3 +1202,303 @@ curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/
   }
 }
 ```
+
+## N-Grams, Part 2
+
+```bash
+curl -X DELETE '127.0.0.1:9200/movies?pretty'
+
+curl -X PUT '127.0.0.1:9200/movies?pretty' -H 'Content-Type: application/json' -d '{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "autocomplete_filter": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20
+        }
+      },
+      "analyzer": {
+        "autocomplete": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "autocomplete_filter"]
+        }
+      }
+    }
+  }
+}'
+
+curl -X GET '127.0.0.1:9200/movies/_analyze?pretty' -H 'Content-Type: application/json' -d '{
+  "analyzer": "autocomplete",
+  "text": "sta"
+}'
+
+# response
+{
+  "tokens" : [
+    {
+      "token" : "s",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "st",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "sta",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    }
+  ]
+}
+
+curl -X PUT '127.0.0.1:9200/movies/_mapping?pretty' -H 'Content-Type: application/json' -d '
+{
+  "properties": {
+    "title": {
+      "type": "text",
+      "analyzer": "autocomplete"
+    }
+  }
+}'
+
+curl -XPUT '127.0.0.1:9200/_bulk?pretty' -H 'Content-Type: application/json' --data-binary @movies.json
+
+curl -X GET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "sta"
+      }
+    }
+  }
+}'
+
+# response
+{
+  "took" : 13,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 3,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0316167,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : 1.0316167,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        }
+      },
+      {
+        "_index" : "movies",
+        "_id" : "122886",
+        "_score" : 0.97565186,
+        "_source" : {
+          "id" : "122886",
+          "title" : "Star Wars: Episode VII - The Force Awakens",
+          "year" : 2015,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Fantasy",
+            "Sci-Fi",
+            "IMAX"
+          ]
+        }
+      },
+      {
+        "_index" : "movies",
+        "_id" : "1924",
+        "_score" : 0.7663857,
+        "_source" : {
+          "id" : "1924",
+          "title" : "Plan 9 from Outer Space",
+          "year" : 1959,
+          "genre" : [
+            "Horror",
+            "Sci-Fi"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+curl -X GET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "sta",
+        "analyzer": "standard"
+      }
+    }
+  }
+}'
+
+# response
+{
+  "took" : 2,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 2,
+      "relation" : "eq"
+    },
+    "max_score" : 1.3298092,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : 1.3298092,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        }
+      },
+      {
+        "_index" : "movies",
+        "_id" : "122886",
+        "_score" : 1.1700189,
+        "_source" : {
+          "id" : "122886",
+          "title" : "Star Wars: Episode VII - The Force Awakens",
+          "year" : 2015,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Fantasy",
+            "Sci-Fi",
+            "IMAX"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+curl -X GET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "star tr",
+        "analyzer": "standard"
+      }
+    }
+  }
+}'
+```
+
+## Search as you Type" Field Type
+
+```bash
+curl -O http://media.sundog-soft.com/es/sayt.txt
+
+curl -H 'Content-Type: application/json' --silent --request POST 'http://localhost:9200/movies/_analyze?pretty' \
+--data-raw '{
+   "tokenizer" : "standard",
+   "filter": [{"type":"edge_ngram", "min_gram": 1, "max_gram": 4}],
+   "text" : "Star"
+}'
+
+curl -H 'Content-Type: application/json' --request PUT 'http://localhost:9200/autocomplete' \
+-d '{
+   "mappings": {
+       "properties": {
+           "title": {
+               "type": "search_as_you_type"
+           },
+           "genre": {
+               "type": "search_as_you_type"
+           }
+       }
+   }
+}'
+
+curl -H 'Content-Type: application/json' --silent --request POST 'http://localhost:9200/_reindex?pretty' --data-raw '{
+ "source": {
+   "index": "movies"
+ },
+ "dest": {
+   "index": "autocomplete"
+ }
+}' | grep "total\|created\|failures"
+
+curl -H 'Content-Type: application/json' -s --request GET 'http://localhost:9200/autocomplete/_search?pretty' --data-raw '{
+   "size": 5,
+   "query": {
+       "multi_match": {
+           "query": "Sta",
+           "type": "bool_prefix",
+           "fields": [
+               "title",
+               "title._2gram",
+               "title._3gram"
+           ]
+       }
+   }
+}'
+
+INPUT=''
+while true
+do
+  IFS= read -sk1 char
+  INPUT=$INPUT$char
+  echo $INPUT
+  curl -H 'Content-Type: application/json' --silent --request GET 'http://localhost:9200/autocomplete/_search' \
+  --data-raw '{
+      "size": 5,
+      "query": {
+          "multi_match": {
+              "query": "'"$INPUT"'",
+              "type": "bool_prefix",
+              "fields": [
+                  "title",
+                  "title._2gram",
+                  "title._3gram"
+              ]
+          }
+      }
+  }' | jq '.hits.hits[]._source.title' | grep -i "$INPUT"
+done
+```
