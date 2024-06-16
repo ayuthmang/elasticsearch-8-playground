@@ -1087,3 +1087,118 @@ curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/
   }
 }
 ```
+
+## Query-time Search As You Type
+
+```bash
+curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '{
+  "query": {
+    "match_phrase_prefix": {
+      "title": {
+        "query": "star",
+        "slop": 10
+      }
+    }
+  }
+}'
+
+# response
+{
+  "took" : 6,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 2.4749134,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : 2.4749134,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '{
+  "query": {
+    "match_phrase_prefix": {
+      "title": {
+        "query": "star t",
+        "slop": 10
+      }
+    }
+  }
+}'
+
+# response
+{
+  "took" : 3,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 2,
+      "relation" : "eq"
+    },
+    "max_score" : 3.432887,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : 3.432887,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        }
+      },
+      {
+        "_index" : "movies",
+        "_id" : "122886",
+        "_score" : 0.7815037,
+        "_source" : {
+          "id" : "122886",
+          "title" : "Star Wars: Episode VII - The Force Awakens",
+          "year" : 2015,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Fantasy",
+            "Sci-Fi",
+            "IMAX"
+          ]
+        }
+      }
+    ]
+  }
+}
+```
