@@ -954,3 +954,136 @@ curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/
   }
 }
 ```
+
+## Partial Matching
+
+```bash
+curl -X DELETE '127.0.0.1:9200/movies'
+curl -X PUT '127.0.0.1:9200/movies' -H 'Content-Type: application/json' -d '{
+  "mappings": {
+    "properties": {
+      "year": { "type": "text" }
+    }
+  }
+}'
+curl -XPUT '127.0.0.1:9200/_bulk?pretty' -H 'Content-Type: application/json' --data-binary @movies.json
+
+curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '{
+  "query": {
+    "prefix": {
+      "year": "201"
+    }
+  }
+}'
+
+# response
+{
+  "took" : 2,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 3,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : 1.0,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        }
+      },
+      {
+        "_index" : "movies",
+        "_id" : "122886",
+        "_score" : 1.0,
+        "_source" : {
+          "id" : "122886",
+          "title" : "Star Wars: Episode VII - The Force Awakens",
+          "year" : 2015,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Fantasy",
+            "Sci-Fi",
+            "IMAX"
+          ]
+        }
+      },
+      {
+        "_index" : "movies",
+        "_id" : "109487",
+        "_score" : 1.0,
+        "_source" : {
+          "id" : "109487",
+          "title" : "Interstellar",
+          "year" : 2014,
+          "genre" : [
+            "Sci-Fi",
+            "IMAX"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+# wildcard
+curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '{
+  "query": {
+    "wildcard": {
+      "year": "1*"
+    }
+  }
+}'
+
+# response
+{
+  "took" : 3,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "1924",
+        "_score" : 1.0,
+        "_source" : {
+          "id" : "1924",
+          "title" : "Plan 9 from Outer Space",
+          "year" : 1959,
+          "genre" : [
+            "Horror",
+            "Sci-Fi"
+          ]
+        }
+      }
+    ]
+  }
+}
+```
