@@ -322,7 +322,7 @@ curl -XGET '127.0.0.1:9200/movies/_search?q=%2Byear%3A%3E1980%20%2Btitle%3A%22st
 }
 ```
 
-# with request body
+with request body
 
 ```bash
 curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '{
@@ -392,6 +392,309 @@ curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/
             "Sci-Fi"
           ]
         }
+      }
+    ]
+  }
+}
+```
+
+## Pagination
+
+pagination syntax
+
+```bash
+curl -XGET '127.0.0.1:9200/movies/_search?size=2&pretty'
+curl -XGET '127.0.0.1:9200/movies/_search?size=2&from=2&pretty'
+curl -XGET '127.0.0.1:9200/movies/_search?pretty' -H 'Content-Type: application/json' -d '{
+  "from": 2,
+  "size": 2,
+  "query": {"match": {"genre": "Sci-Fi"}}
+}'
+```
+
+## Sorting
+
+```bash
+curl -XGET '127.0.0.1:9200/movies/_search?sort=year&pretty'
+
+# result
+{
+  "took" : 2,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 5,
+      "relation" : "eq"
+    },
+    "max_score" : null,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "1924",
+        "_score" : null,
+        "_source" : {
+          "id" : "1924",
+          "title" : "Plan 9 from Outer Space",
+          "year" : 1959,
+          "genre" : [
+            "Horror",
+            "Sci-Fi"
+          ]
+        },
+        "sort" : [
+          -347155200000
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "58559",
+        "_score" : null,
+        "_source" : {
+          "id" : "58559",
+          "title" : "Dark Knight, The",
+          "year" : 2008,
+          "genre" : [
+            "Action",
+            "Crime",
+            "Drama",
+            "IMAX"
+          ]
+        },
+        "sort" : [
+          1199145600000
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "109487",
+        "_score" : null,
+        "_source" : {
+          "id" : "109487",
+          "title" : "Interstellar",
+          "year" : 2014,
+          "genre" : [
+            "Sci-Fi",
+            "IMAX"
+          ]
+        },
+        "sort" : [
+          1388534400000
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "122886",
+        "_score" : null,
+        "_source" : {
+          "id" : "122886",
+          "title" : "Star Wars: Episode VII - The Force Awakens",
+          "year" : 2015,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Fantasy",
+            "Sci-Fi",
+            "IMAX"
+          ]
+        },
+        "sort" : [
+          1420070400000
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : null,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        },
+        "sort" : [
+          1451606400000
+        ]
+      }
+    ]
+  }
+}
+
+# sort title
+curl -XGET '127.0.0.1:9200/movies/_search?sort=title&pretty'
+
+# result
+{
+  "error" : {
+    "root_cause" : [
+      {
+        "type" : "illegal_argument_exception",
+        "reason" : "Fielddata is disabled on [title] in [movies]. Text fields are not optimised for operations that require per-document field data like aggregations and sorting, so these operations are disabled by default. Please use a keyword field instead. Alternatively, set fielddata=true on [title] in order to load field data by uninverting the inverted index. Note that this can use significant memory."
+      }
+    ],
+    "type" : "search_phase_execution_exception",
+    "reason" : "all shards failed",
+    "phase" : "query",
+    "grouped" : true,
+    "failed_shards" : [
+      {
+        "shard" : 0,
+        "index" : "movies",
+        "node" : "0pF_eyTgTNiJoma4qrUE8w",
+        "reason" : {
+          "type" : "illegal_argument_exception",
+          "reason" : "Fielddata is disabled on [title] in [movies]. Text fields are not optimised for operations that require per-document field data like aggregations and sorting, so these operations are disabled by default. Please use a keyword field instead. Alternatively, set fielddata=true on [title] in order to load field data by uninverting the inverted index. Note that this can use significant memory."
+        }
+      }
+    ],
+    "caused_by" : {
+      "type" : "illegal_argument_exception",
+      "reason" : "Fielddata is disabled on [title] in [movies]. Text fields are not optimised for operations that require per-document field data like aggregations and sorting, so these operations are disabled by default. Please use a keyword field instead. Alternatively, set fielddata=true on [title] in order to load field data by uninverting the inverted index. Note that this can use significant memory.",
+      "caused_by" : {
+        "type" : "illegal_argument_exception",
+        "reason" : "Fielddata is disabled on [title] in [movies]. Text fields are not optimised for operations that require per-document field data like aggregations and sorting, so these operations are disabled by default. Please use a keyword field instead. Alternatively, set fielddata=true on [title] in order to load field data by uninverting the inverted index. Note that this can use significant memory."
+      }
+    }
+  },
+  "status" : 400
+}
+
+# delete, create new index and import data
+curl -X DELETE '127.0.0.1:9200/movies'
+curl -X PUT '127.0.0.1:9200/movies' -H 'Content-Type: application/json' -d '{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}'
+curl -XPUT '127.0.0.1:9200/_bulk?pretty' -H 'Content-Type: application/json' --data-binary @movies.json
+
+curl -XGET '127.0.0.1:9200/movies/_search?sort=title&pretty'
+
+# result
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 5,
+      "relation" : "eq"
+    },
+    "max_score" : null,
+    "hits" : [
+      {
+        "_index" : "movies",
+        "_id" : "58559",
+        "_score" : null,
+        "_source" : {
+          "id" : "58559",
+          "title" : "Dark Knight, The",
+          "year" : 2008,
+          "genre" : [
+            "Action",
+            "Crime",
+            "Drama",
+            "IMAX"
+          ]
+        },
+        "sort" : [
+          "Dark Knight, The"
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "109487",
+        "_score" : null,
+        "_source" : {
+          "id" : "109487",
+          "title" : "Interstellar",
+          "year" : 2014,
+          "genre" : [
+            "Sci-Fi",
+            "IMAX"
+          ]
+        },
+        "sort" : [
+          "Interstellar"
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "1924",
+        "_score" : null,
+        "_source" : {
+          "id" : "1924",
+          "title" : "Plan 9 from Outer Space",
+          "year" : 1959,
+          "genre" : [
+            "Horror",
+            "Sci-Fi"
+          ]
+        },
+        "sort" : [
+          "Plan 9 from Outer Space"
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "135569",
+        "_score" : null,
+        "_source" : {
+          "id" : "135569",
+          "title" : "Star Trek Beyond",
+          "year" : 2016,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Sci-Fi"
+          ]
+        },
+        "sort" : [
+          "Star Trek Beyond"
+        ]
+      },
+      {
+        "_index" : "movies",
+        "_id" : "122886",
+        "_score" : null,
+        "_source" : {
+          "id" : "122886",
+          "title" : "Star Wars: Episode VII - The Force Awakens",
+          "year" : 2015,
+          "genre" : [
+            "Action",
+            "Adventure",
+            "Fantasy",
+            "Sci-Fi",
+            "IMAX"
+          ]
+        },
+        "sort" : [
+          "Star Wars: Episode VII - The Force Awakens"
+        ]
       }
     ]
   }
