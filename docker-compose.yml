@@ -1,3 +1,5 @@
+# some config and ref is combined from udemy course and https://www.elastic.co/blog/getting-started-with-the-elastic-stack-and-docker-compose
+
 version: "3"
 services:
   elasticsearch:
@@ -11,6 +13,18 @@ services:
       - 9300:9300
     volumes:
       - ./esdata:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.1
+    ports:
+      - 5044:5044
+    volumes:
+      - ./logstashconfig/pipeline:/usr/share/logstash/pipeline
+      - ./exercises/s04/access_log:/home/access_log
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTIC_HOSTS=http://elasticsearch:9200
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.0.0
