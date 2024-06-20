@@ -72,4 +72,32 @@ LOAD DATA LOCAL INFILE '/home/ml-100k/u.item' INTO TABLE movielens.movies CHARAC
 USE movielens;
 
 SELECT * FROM movies WHERE title LIKE 'Star%';
+
+-- create user
+-- CREATE USER 'student'@'localhost' IDENTIFIED BY 'password';
+-- GRANT ALL PRIVILEGES ON movielens.* TO 'student'@'localhost';
+-- FLUSH PRIVILEGES;
+```
+
+
+```bash
+# for testing logstash conf
+docker compose run logstash bash
+logstash -f /usr/share/logstash/pipeline/mysql.conf
+
+
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9200/movielens-sql/_search?q=star&pretty'
+
+# if get error "high disk watermark [90%] exceeded on" then run the following and restart the logstash
+curl -XPUT "http://localhost:9200/_cluster/settings" \
+ -H 'Content-Type: application/json' -d'
+{
+  "persistent": {
+    "cluster": {
+      "routing": {
+        "allocation.disk.threshold_enabled": false
+      }
+    }
+  }
+}'
 ```
