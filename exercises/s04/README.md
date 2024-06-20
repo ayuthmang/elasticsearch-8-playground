@@ -44,7 +44,7 @@ curl -X GET 'http://localhost:9200/_cat/indices?v'
 curl -X GET 'http://localhost:9200/.ds-logs-generic-default-2024.06.18-000001/_search?pretty'
 ```
 
-## 55. Logstash and MySQL, Part 1
+## 55. Logstash and MySQL, Part 1 & 2
 
 ```bash
 curl -O http://files.grouplens.org/datasets/movielens/ml-100k.zip
@@ -83,7 +83,9 @@ SELECT * FROM movies WHERE title LIKE 'Star%';
 ```bash
 # for testing logstash conf
 docker compose run logstash bash
+# docker compose down logstash && docker compose build && docker compose up logstash -d
 logstash -f /usr/share/logstash/pipeline/mysql.conf
+
 
 
 curl -H 'Content-Type: application/json' -X GET 'http://localhost:9200/movielens-sql/_search?q=star&pretty'
@@ -100,4 +102,62 @@ curl -XPUT "http://localhost:9200/_cluster/settings" \
     }
   }
 }'
+```
+
+## 58. Importing JSON Data with Logstash
+
+```bash
+# https://github.com/coralogix-resources/elk-course-samples
+
+curl -H 'Content-Type: application/json' -X GET '127.0.0.1:9200/demo-csv/_search?pretty'
+# curl -H 'Content-Type: application/json' -X DELETE '127.0.0.1:9200/demo-csv?pretty'  # for delete
+
+# restart logstash and enable mount file csv-read-drop.conf
+# after run with csv-read-drop.conf
+
+curl -H 'Content-Type: application/json' -X GET '127.0.0.1:9200/demo-csv-drop/_search?pretty' -d '{"size": 1}'
+# response
+{
+  "took" : 2,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 4,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "demo-csv-drop",
+        "_id" : "aABeNpAB1C7yIqy7tO85",
+        "_score" : 1.0,
+        "_source" : {
+          "log" : {
+            "file" : {
+              "path" : "/home/csv-schema-short-numerical.csv"
+            }
+          },
+          "age" : 32,
+          "timestamp" : "2019-11-16T14:55:13Z",
+          "paymentType" : "Mastercard",
+          "country" : "China",
+          "name" : "Rod Edelmann",
+          "gender" : "Male",
+          "ip_address" : "131.61.251.254",
+          "purpose" : "Clothing",
+          "id" : "2",
+          "event" : {
+            "original" : "2,2019-11-16T14:55:13Z,Mastercard,Rod Edelmann,Male,131.61.251.254,Clothing,China,32\r"
+          }
+        }
+      }
+    ]
+  }
+}
 ```
