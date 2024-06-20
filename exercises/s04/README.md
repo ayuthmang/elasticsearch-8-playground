@@ -43,3 +43,33 @@ curl -X GET 'http://localhost:9200/_cat/indices?v'
 # then grab the index name and
 curl -X GET 'http://localhost:9200/.ds-logs-generic-default-2024.06.18-000001/_search?pretty'
 ```
+
+## 55. Logstash and MySQL, Part 1
+
+```bash
+curl -O http://files.grouplens.org/datasets/movielens/ml-100k.zip
+unzip ml-100k.zip
+```
+
+```sql
+CREATE DATABASE movielens;
+
+CREATE TABLE movielens.movies(
+	movieId INT PRIMARY KEY NOT NULL,
+	title TEXT,
+	releaseDate Date
+);
+
+-- docker exec to mysql shell and run the following
+-- $ docker compose exec -it mysql bash
+-- $ head /home/ml-100k/u.item -- make sure file exists
+-- $ mysql -uroot -ppassword --local_infile=1
+
+SET GLOBAL local_infile = TRUE;
+
+LOAD DATA LOCAL INFILE '/home/ml-100k/u.item' INTO TABLE movielens.movies CHARACTER SET latin1 FIELDS TERMINATED BY '|' ( movieId, title, @releaseDate ) SET releaseDate = STR_TO_DATE( @releaseDate, '%d-%b-%Y' );
+
+USE movielens;
+
+SELECT * FROM movies WHERE title LIKE 'Star%';
+```

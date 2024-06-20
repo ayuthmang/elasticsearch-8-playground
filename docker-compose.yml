@@ -35,5 +35,14 @@ services:
     volumes:
       - ./kibanadata:/usr/share/kibana/data
 
+  mysql:
+    image: mysql:8.4.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysqldata:/var/lib/mysql
+      - ./exercises/s04/ml-100k:/home/ml-100k
 volumes:
   esdata:
